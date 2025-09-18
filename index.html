@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PROJECT FUSION — Flowchart</title>
+
+<!-- html2canvas for PNG export -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+/* ==== THEME ==== */
+:root{
+  --bg:#0f1221; --panel:#141933; --panel-2:#10162b;
+  --accent:#6ee7ff; --accent-2:#7af0c0;
+  --text:#e8eefc; --muted:#9aa3c1;
+  --stroke:#2a3564;
+  --shadow:0 12px 28px rgba(0,0,0,.35),0 2px 8px rgba(0,0,0,.3);
+  --radius:16px;
+}
+html,body{height:100%}
+body{
+  margin:0; background:radial-gradient(1200px 800px at 20% 10%,#151b39 0%,#0f1221 55%,#0c0f1c 100%), var(--bg);
+  color:var(--text); font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
+  overflow:hidden;
+}
+/* ==== UI ==== */
+.toolbar{
+  position:fixed; inset:16px 16px auto auto; z-index:50;
+  display:flex; gap:8px; align-items:center;
+  background:rgba(20,25,51,.8); backdrop-filter:saturate(140%) blur(10px);
+  border:1px solid #283058; padding:8px 10px; border-radius:12px; box-shadow:var(--shadow);
+}
+.toolbar button{
+  background:#111733; color:var(--text); border:1px solid #2c3769;
+  padding:6px 10px; border-radius:8px; cursor:pointer; font-weight:600;
+  transition:.2s ease; letter-spacing:.2px
+}
+.toolbar button:hover{transform:translateY(-1px); background:#0f1631}
+.toolbar .hint{color:var(--muted); font-size:12px; padding-left:6px}
+
+.viewport{position:fixed; inset:0}
+.canvas{position:absolute; inset:0; transform-origin:0 0; touch-action:none}
+
+.grid{position:absolute; left:50%; transform:translateX(-50%);
+  top:96px; width:max(1100px, 80vw);
+  display:grid; grid-template-columns:repeat(4,1fr); grid-gap:28px;
+  padding-bottom:120px;
+}
+.node{
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border:1px solid #29345f; border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:18px; position:relative; isolation:isolate;
+}
+.node.center{
+  position:absolute; left:50%; top:16px; transform:translate(-50%,0);
+  display:inline-flex; flex-direction:column; align-items:center; gap:8px;
+  padding:22px 26px; border:1px solid #3b4aa3;
+  background:linear-gradient(180deg,#151d4a 0%,#11183a 100%);
+  box-shadow:0 10px 40px rgba(82,119,255,.35),inset 0 0 0 1px rgba(110,231,255,.1);
+}
+.node.center .title{font-size:18px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+  background:linear-gradient(90deg,#7af0c0,#6ee7ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.subtitle{color:var(--muted); font-weight:600; font-size:12px; letter-spacing:.3px}
+
+.category .head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;
+  border:1px solid #345; padding:6px 8px; border-radius:999px;
+  color:#a1b3ff; background:rgba(60,88,255,.06); font-weight:700; letter-spacing:.3px; font-size:12px;}
+.badge i{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor}
+
+.chips{display:grid; grid-template-columns:1fr; gap:8px; transition:max-height .35s ease; overflow:hidden}
+.chip{
+  background:linear-gradient(180deg,#121a3c,#0f1631);
+  border:1px solid #2b3562; border-radius:12px; padding:10px 12px;
+  color:#dfe7ff; display:flex; justify-content:space-between; align-items:center; gap:10px;
+  cursor:default;
+}
+.chip .label{font-weight:700}
+.chip .info{color:#9fb1ff; font-size:12px}
+
+.toggle{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:8px;
+  display:grid;place-items:center;cursor:pointer;border:1px solid #31407a;
+  background:#101736;color:#a9b8ff;font-weight:900;transition:.2s;}
+.toggle:hover{transform:translateY(-1px)}
+
+svg.lines{position:absolute;inset:0;pointer-events:none}
+.link{stroke:var(--stroke);stroke-width:2;fill:none;stroke-linecap:round}
+.link.accent{stroke:url(#gradAccent)}
+.draw{stroke-dasharray:1000;stroke-dashoffset:1000;animation:draw 1.2s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.node,.chip{opacity:0;transform:translateY(8px);animation:up .5s ease forwards}
+.node.center{animation:pop .5s cubic-bezier(.2,.9,.2,1.2) .1s forwards}
+@keyframes up{to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-4px) scale(.98)} to{opacity:1;transform:translate(-50%,0) scale(1)}}
+
+.chip[data-tip]:hover::after{content:attr(data-tip);position:absolute;transform:translateY(-100%);margin-top:-6px;
+  background:#0d1330;color:#cfe2ff;border:1px solid #2a3a7a;border-radius:10px;
+  padding:8px 10px;width:280px;box-shadow:var(--shadow);z-index:10;font-size:12px;}
+
+.legend{position:fixed;left:16px;bottom:16px;z-index:40;color:#b9c6ff;
+  background:rgba(20,25,51,.6);border:1px solid #283058;padding:10px 12px;border-radius:12px;backdrop-filter:blur(10px)}
+.legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+.legend small{color:#8ea0d8}
+
+@media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:700px){.grid{grid-template-columns:1fr}.node.center{position:static;transform:none;margin:16px auto 0}}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button id="reset">Reset</button>
+  <button id="collapse">Collapse all</button>
+  <button id="expand">Expand all</button>
+  <button id="export">Export PNG</button>
+  <span class="hint">Tip: drag to pan, scroll to zoom, click ◱ to collapse a category.</span>
+</div>
+
+<div class="legend">
+  <div><span class="dot" style="background:#7af0c0"></span> Strategic Streams</div>
+  <div><span class="dot" style="background:#6ee7ff"></span> Programs & Activations</div>
+  <small>Lines animate on load; hover chips for details.</small>
+</div>
+
+<div class="viewport">
+  <div class="canvas" id="canvas">
+    <svg class="lines" id="lines" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="gradAccent" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#6ee7ff"/>
+          <stop offset="100%" stop-color="#7af0c0"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="node center" id="center">
+      <div class="title">PROJECT FUSION</div>
+      <div class="subtitle">Condensed Sales Playbook</div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<script>
+/* ==== DATA ==== */
+const DATA = [
+  {id:'promos',label:'Programs & Activations',color:'#6ee7ff',items:[
+    {label:'On Ice Program', tip:'10% discount on slowest SKUs; exclude samples/returns.'},
+    {label:'Happy Hour', tip:'Timed promos tied to local events.'},
+    {label:'Unique Drops', tip:'Limited-release strains/merch.'},
+    {label:'Boarding Pass Bonus', tip:'Extra AlpineIQ points; often free redemption.'},
+    {label:'Blind Box Pickup', tip:'Surprise-box sales to move mixed inventory.'},
+    {label:'Brand Wheel', tip:'Spin-the-wheel activations with vouchers.'},
+    {label:'Go Pink', tip:'Ruby partnership for Breast Cancer Awareness.'},
+    {label:'Needle in a Haystack', tip:'Hidden SKU unlocks bonus rewards.'}
+  ]},
+  {id:'events',label:'Events & Local',color:'#7af0c0',items:[
+    {label:'Glass Shows', tip:'Celebrity glassblower events + drops.'},
+    {label:'Seasonal / Local', tip:'Community tie-ins, sports promos.'}
+  ]},
+  {id:'analytics',label:'Analytics & Dashboards',color:'#7af0c0',items:[
+    {label:'BEI', tip:'Brand strength index for SKUs.'},
+    {label:'PPI & Sell-Through', tip:'Tracks pricing power & competitiveness.'},
+    {label:'Customer Strength Score', tip:'With reconciliation & CRM cadence.'}
+  ]},
+  {id:'strategy',label:'Strategy & Enablement',color:'#7af0c0',items:[
+    {label:'Sales Team Efficiency', tip:'Scores, leaderboards, recognition.'},
+    {label:'Pre-Roll Strategy', tip:'Ruby dominance stabilizes categories.'},
+    {label:'Accessory Strategy', tip:'Curated essentials, avoid low-value.'},
+    {label:'Store Strategy', tip:'Event hubs vs volume engines.'}
+  ]}
+];
+
+/* ==== HELPERS ==== */
+const grid = document.getElementById('grid');
+const linesSVG = document.getElementById('lines');
+const center = document.getElementById('center');
+const canvas = document.getElementById('canvas');
+
+function el(tag, cls, html){
+  const n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(html) n.innerHTML = html;
+  return n;
+}
+
+function createCategory(col){
+  const node = el('div','node category');
+  node.dataset.category = col.id;
+
+  const head = el('div','head');
+  const badge = el('div','badge', `<i style="background:${col.color}"></i> ${col.label}`);
+  head.appendChild(badge);
+  node.appendChild(head);
+
+  const toggle = el('button','toggle','◱');
+  toggle.title = 'Collapse/Expand';
+  node.appendChild(toggle);
+
+  const chipsWrap = el('div','chips');
+  col.items.forEach((it,i)=>{
+    const chip = el('div','chip');
+    chip.style.animationDelay = `${0.05*i+0.1}s`;
+    chip.dataset.tip = it.tip;
+    chip.innerHTML = `<span class="label">${it.label}</span><span class="info">info</span>`;
+    chipsWrap.appendChild(chip);
+  });
+  node.appendChild(chipsWrap);
+
+  let open = true;
+  const fullHeight = () => {
+    chipsWrap.style.maxHeight = 'unset';
+    const h = chipsWrap.getBoundingClientRect().height;
+    chipsWrap.style.maxHeight = h + 'px';
+    requestAnimationFrame(()=>{ chipsWrap.style.maxHeight = h + 'px'; });
+  };
+  const collapse = () => { chipsWrap.style.maxHeight = '0px'; open=false; };
+  const expand = () => { fullHeight(); open=true; };
+  toggle.addEventListener('click', ()=> open ? collapse() : expand());
+  requestAnimationFrame(fullHeight);
+
+  return {node, chipsWrap, toggle};
+}
+
+const catNodes = DATA.map(createCategory);
+catNodes.forEach(c => grid.appendChild(c.node));
+
+/* ==== CONNECTORS ==== */
+function pathBetween(a, b){
+  const ra = a.getBoundingClientRect();
+  const rb = b.getBoundingClientRect();
+  const pa = {x: ra.left + ra.width/2 + window.scrollX, y: ra.bottom + window.scrollY};
+  const pb = {x: rb.left + rb.width/2 + window.scrollX, y: rb.top + window.scrollY};
+  const c1 = {x: pa.x, y: pa.y + 40};
+  const c2 = {x: pb.x, y: pb.y - 40};
+  return `M ${pa.x},${pa.y} C ${c1.x},${c1.y} ${c2.x},${c2.y} ${pb.x},${pb.y}`;
+}
+function drawLines(){
+  const rect = canvas.getBoundingClientRect();
+  linesSVG.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+  linesSVG.setAttribute('width', rect.width);
+  linesSVG.setAttribute('height', rect.height);
+  linesSVG.querySelectorAll('path').forEach(p=>p.remove());
+  catNodes.forEach((cat,i)=>{
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', pathBetween(center, cat.node));
+    p.setAttribute('class','link accent draw');
+    p.style.animationDelay = (i*0.08)+'s';
+    linesSVG.appendChild(p);
+  });
+}
+window.addEventListener('resize', drawLines);
+new ResizeObserver(drawLines).observe(grid);
+setTimeout(drawLines, 120);
+
+/* ==== PAN & ZOOM ==== */
+let scale = 1, origin = {x:0,y:0}, isPanning=false, start={x:0,y:0}, startOrigin={x:0,y:0};
+function applyTransform(){
+  canvas.style.transform = `translate(${origin.x}px, ${origin.y}px) scale(${scale})`;
+  drawLines();
+}
+document.addEventListener('wheel', (e)=>{
+  if(!e.ctrlKey && !e.metaKey){
+    const delta = -e.deltaY * 0.0015;
+    const prev = scale;
+    scale = Math.min(2.0, Math.max(0.6, scale*(1+delta)));
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left, py = e.clientY - rect.top;
+    origin.x -= (px/prev - px/scale);
+    origin.y -= (py/prev - py/scale);
+    applyTransform();
+    e.preventDefault();
+  }
+},{passive:false});
+canvas.addEventListener('pointerdown', (e)=>{
+  isPanning = true; start = {x:e.clientX, y:e.clientY}; startOrigin = {...origin};
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', (e)=>{
+  if(!isPanning) return;
+  origin.x = startOrigin.x + (e.clientX - start.x);
+  origin.y = startOrigin.y + (e.clientY - start.y);
+  applyTransform();
+});
+canvas.addEventListener('pointerup', ()=> isPanning=false);
+
+/* ==== CONTROLS ==== */
+document.getElementById('reset').onclick = ()=>{
+  scale=1; origin={x:0,y:0}; applyTransform();
+};
+document.getElementById('collapse').onclick = ()=>{
+  document.querySelectorAll('.chips').forEach(c=> c.style.maxHeight='0px');
+};
+document.getElementById('expand').onclick = ()=>{
+  document.querySelectorAll('.category .chips').forEach(c=>{
+    c.style.maxHeight='unset';
+    const h = c.getBoundingClientRect().height;
+    c.style.maxHeight = h+'px';
+  });
+};
+
+/* ==== EXPORT PNG ==== */
+document.getElementById('export').onclick = async () => {
+  const target = canvas;
+  const prevTransform = target.style.transform;
+  const prevScale = scale, prevOrigin = {...origin};
+  scale = 1; origin = {x:0,y:0};
+  target.style.transform = 'translate(0px,0px) scale(1)';
+  drawLines();
+  const shot = await html2canvas(target, {
+    backgroundColor: '#0f1221',
+    scale: 2,
+    useCORS: true,
+    windowWidth: target.getBoundingClientRect().width,
+    windowHeight: target.getBoundingClientRect().height
+  });
+  scale = prevScale; origin = prevOrigin; target.style.transform = prevTransform; drawLines();
+  const link = document.createElement('a');
+  link.download = `project-fusion-flowchart-${new Date().toISOString().slice(0,10)}.png`;
+  link.href = shot.toDataURL('image/png');
+  link.click();
+};
+
+/* ==== STAGGER ENTRANCE ==== */
+[...document.querySelectorAll('.node.category')].forEach((n,i)=>{
+  n.style.animationDelay = `${0.1 + i*0.06}s`;
+});
+</script>
+</body>
+</html>
