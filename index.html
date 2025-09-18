@@ -9,289 +9,270 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
-/* ==== THEME ==== */
-/*
- * To evoke the sun‑drenched vibe of Destiny Island, the dark cyberpunk palette
- * has been replaced with a warm, tropical set of colours.  The base
- * background now fades from sky to sea, panels look like sandy islands and
- * accents pull from lush greens.  Keeping variables at the top makes it
- * simple to tweak the atmosphere without hunting through the stylesheet.
- */
-:root{
-  /* soft gradient for the page: sky to sea */
-  --bg: linear-gradient(180deg, #bdefff 0%, #aeeafc 40%, #8bd4f7 100%);
-  /* island panels: light sand to golden sand */
-  --panel:#fff5c8;
-  --panel-2:#ffe8a8;
-  /* lush accents for highlights and links */
-  --accent:#54c571;
-  --accent-2:#79d08c;
-  /* legible dark text and subdued secondary text */
-  --text:#2f4858;
-  --muted:#5f6e8a;
-  /* rope‑like stroke colour for connectors */
-  --stroke:#8cc8d4;
-  /* softer drop shadow to mimic floating islands */
-  --shadow:0 10px 24px rgba(0,0,0,.2),0 4px 12px rgba(0,0,0,.15);
-  /* generous corner radius */
-  --radius:20px;
-}
-html,body{height:100%}
-body{
-  margin:0;
-  /* mix an underlying radial pattern with our tropical gradient */
-  background:
-    radial-gradient(1200px 800px at 20% 10%, rgba(255,255,255,.15) 0%, rgba(255,255,255,0) 80%),
-    var(--bg);
-  color:var(--text);
-  font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-  overflow:hidden;
-}
-/* ==== UI ==== */
-.toolbar{
-  position:fixed;
-  inset:16px 16px auto auto;
-  z-index:50;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  background:rgba(255,255,255,.65);
-  backdrop-filter:saturate(120%) blur(8px);
-  border:1px solid rgba(0,0,0,.1);
-  padding:8px 12px;
-  border-radius:14px;
-  box-shadow:var(--shadow);
-}
-.toolbar button{
-  background:rgba(255,255,255,.9);
-  color:var(--text);
-  border:1px solid rgba(0,0,0,.1);
-  padding:6px 12px;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:600;
-  transition:.2s ease;
-  letter-spacing:.2px;
-  box-shadow:0 2px 4px rgba(0,0,0,.05);
-}
-.toolbar button:hover{
-  transform:translateY(-1px);
-  background:rgba(255,255,255,1);
-}
-.toolbar .hint{
-  color:var(--muted);
-  font-size:12px;
-  padding-left:6px;
+/* =========================================================================
+ * Lucidchart‑inspired flowchart theme
+ *
+ * This stylesheet discards the previous design and rebuilds the flowchart
+ * from the ground up to echo the look of Lucidchart templates.  Lucidchart
+ * recommends limiting the palette to just a few complementary colours to
+ * keep diagrams readable【950328073522388†L213-L217】.  We therefore define
+ * three category hues and reuse one to stay within that limit.  Shapes are
+ * kept simple with subtle shadows and generous spacing for clarity.  A
+ * distinct “start” terminator sits at the top of the canvas, connected by
+ * straight lines with arrowheads to each category below.
+ * ========================================================================= */
+
+/* Colour palette – two unique hues reused across categories plus a third */
+:root {
+  --cat1: #5B9BD5;   /* sky blue – used for Programs & Activations and Strategy */
+  --cat2: #A9D18E;   /* light green – used for Events & Local */
+  --cat3: #FFD966;   /* pale yellow – used for Analytics & Dashboards */
+  --start: #C0C0C0;  /* grey for start terminator */
+  --bg: #FFFFFF;     /* white background for maximal contrast */
+  --text: #333333;   /* dark text for readability */
+  --border: #DDDDDD; /* light border */
+  --shadow: 0 2px 4px rgba(0,0,0,0.1);
+  --radius: 10px;
 }
 
-.viewport{position:fixed; inset:0}
-.canvas{position:absolute; inset:0; transform-origin:0 0; touch-action:none}
-/* animate canvas transforms for smooth zoom/pan and reset */
-.canvas{
-  transition:transform .4s ease;
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  line-height: 1.4;
 }
 
-.grid{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%);
-  top:120px;
-  width:min(1000px, 92vw);
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
-  grid-gap:40px;
-  padding-bottom:160px;
+/* Toolbar positioned top right with minimal styling */
+.toolbar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
-.node{
-  /* give every island an irregular silhouette and sandy gradient */
-  background:linear-gradient(145deg,var(--panel),var(--panel-2));
-  border:2px solid rgba(0,0,0,.1);
-  border-radius:0;
-  box-shadow:var(--shadow);
-  padding:20px 22px;
-  position:relative;
-  isolation:isolate;
-  /* irregular island shape */
-  clip-path:polygon(50% 0%, 88% 12%, 100% 42%, 86% 90%, 50% 100%, 18% 92%, 0% 60%, 4% 28%);
-  /* subtle water ring around each island */
-  overflow:visible;
+.toolbar button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
-/*
- * Assign a handful of unique island silhouettes.  These classes are added
- * dynamically to each category node (see JavaScript) to break up
- * repetition and reinforce the fantasy‑archipelago feel.  Feel free to
- * tweak the polygon points to make shapes more jagged or round.
- */
-.island-0{clip-path:polygon(50% 0%,85% 8%,100% 40%,90% 90%,50% 100%,10% 90%,0% 60%,5% 20%)}
-.island-1{clip-path:polygon(45% 0%,80% 20%,95% 50%,85% 95%,50% 100%,15% 95%,0% 60%,10% 20%)}
-.island-2{clip-path:polygon(50% 0%,75% 10%,100% 35%,90% 80%,60% 100%,20% 95%,0% 65%,5% 25%)}
-.island-3{clip-path:polygon(50% 0%,90% 20%,100% 55%,80% 100%,50% 95%,15% 100%,0% 60%,10% 20%)}
-/* restore circular corners on nested elements */
-.node .badge,
-.node .chip,
-.node .toggle{
-  border-radius:999px;
+.toolbar button:hover {
+  background: #F5F5F5;
 }
-.node.center{
-  position:absolute;
-  left:50%;
-  top:16px;
-  transform:translate(-50%,0);
-  display:inline-flex;
-  flex-direction:column;
-  align-items:center;
-  gap:10px;
-  padding:30px 36px;
-  /* centre island has its own silhouette */
-  clip-path:polygon(50% 0%, 100% 35%, 88% 100%, 12% 100%, 0% 35%);
-  border-radius:0;
-  border:3px solid rgba(0,0,0,.15);
-  background:linear-gradient(145deg, #fff3c2 0%, #ffe095 100%);
-  box-shadow:0 14px 32px rgba(0,0,0,.25), inset 0 0 0 2px rgba(0,0,0,.08);
-}
-.node.center .title{
-  /* slightly larger and spaced lettering for the centre island title */
-  font-size:20px;
-  font-weight:800;
-  letter-spacing:.8px;
-  text-transform:uppercase;
-  margin-bottom:4px;
-  /* tropical gradient on the project title */
-  background:linear-gradient(90deg,#00b4d8,#75e5b0);
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-.subtitle{
-  color:var(--muted);
-  font-weight:600;
-  font-size:12px;
-  letter-spacing:.3px;
-  margin-top:-4px;
+.toolbar .hint {
+  font-size: 12px;
+  color: #666;
+  max-width: 240px;
 }
 
-.category .head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid rgba(0,0,0,.1);
-  color:var(--accent);
-  background:rgba(84,197,113,.15);
-  font-weight:700;
-  letter-spacing:.3px;
-  font-size:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,.08);
+/* Legend at bottom left explaining colour coding */
+.legend {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 90;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
 }
-.badge i{
-  display:inline-block;
-  width:8px;
-  height:8px;
-  border-radius:50%;
-  background:currentColor;
-  box-shadow:0 0 6px currentColor;
+.legend .row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
 }
-
-.chips{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:8px;
-  transition:max-height .35s ease;
-  overflow:hidden;
+.legend .row:last-child {
+  margin-bottom: 0;
 }
-.chip{
-  background:linear-gradient(145deg,#fff7dc,#f0e5bd);
-  border:1px solid rgba(0,0,0,.1);
-  border-radius:14px;
-  padding:12px 14px;
-  color:var(--text);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  cursor:default;
-  box-shadow:0 2px 8px rgba(0,0,0,.05);
+.legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
 }
-.chip .label{
-  font-weight:700;
-}
-.chip .info{
-  color:var(--muted);
-  font-size:12px;
+.legend small {
+  display: block;
+  margin-top: 6px;
+  color: #777;
 }
 
-.toggle{
-  position:absolute;
-  top:14px;
-  right:14px;
-  width:28px;
-  height:28px;
-  border-radius:8px;
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  border:1px solid rgba(0,0,0,.1);
-  background:rgba(255,255,255,.4);
-  color:var(--text);
-  font-weight:900;
-  transition:.2s;
+/* Viewport and canvas support panning and zooming */
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
 }
-.toggle:hover{transform:translateY(-1px)}
-
-svg.lines{position:absolute;inset:0;pointer-events:none}
-.link{stroke:var(--stroke);stroke-width:2;fill:none;stroke-linecap:round}
-.link.accent{stroke:url(#gradAccent)}
-.draw{stroke-dasharray:1000;stroke-dashoffset:1000;animation:draw 1.2s ease forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-.node,.chip{opacity:0;transform:translateY(8px);animation:up .5s ease forwards}
-.node.center{animation:pop .5s cubic-bezier(.2,.9,.2,1.2) .1s forwards}
-@keyframes up{to{opacity:1;transform:none}}
-@keyframes pop{from{opacity:0;transform:translate(-50%,-4px) scale(.98)} to{opacity:1;transform:translate(-50%,0) scale(1)}}
-
-.chip[data-tip]:hover::after{
-  content:attr(data-tip);
-  position:absolute;
-  transform:translateY(-100%);
-  margin-top:-6px;
-  background:linear-gradient(145deg,#fff7da,#f2e5b8);
-  color:var(--text);
-  border:1px solid rgba(0,0,0,.1);
-  border-radius:10px;
-  padding:8px 12px;
-  width:280px;
-  box-shadow:0 4px 12px rgba(0,0,0,.15);
-  z-index:10;
-  font-size:12px;
+.canvas {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  transition: transform 0.4s ease;
 }
 
-.legend{
-  position:fixed;
-  left:16px;
-  bottom:16px;
-  z-index:40;
-  color:var(--text);
-  background:rgba(255,255,255,.65);
-  border:1px solid rgba(0,0,0,.1);
-  padding:10px 14px;
-  border-radius:14px;
-  backdrop-filter:blur(8px);
-  box-shadow:0 4px 12px rgba(0,0,0,.1);
-}
-.legend .dot{
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  display:inline-block;
-  margin-right:6px;
-}
-.legend small{
-  color:var(--muted);
+/* Layout container for categories */
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 60px;
+  padding: 220px 20px 200px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-@media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:700px){.grid{grid-template-columns:1fr}.node.center{position:static;transform:none;margin:16px auto 0}}
+/* Generic node styling */
+.node {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Start node (terminator) positioned at top centre */
+.node.start {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  border-radius: 20px;
+  background: var(--start);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  text-align: center;
+  padding: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Category node header */
+.node .header {
+  padding: 10px 12px;
+  color: var(--bg);
+  font-weight: 700;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  position: relative;
+}
+/* Chips container with collapsible behaviour */
+.chips {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.node.open .chips {
+  max-height: 600px;
+}
+/* Chip styling */
+.chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F7F9FB;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: default;
+  position: relative;
+}
+.chip .info {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Tooltip for chip descriptions */
+.chip[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  margin-top: -6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: var(--text);
+  font-size: 12px;
+  box-shadow: var(--shadow);
+  white-space: normal;
+  max-width: 200px;
+  z-index: 10;
+}
+
+/* Toggle button for collapsing category lists */
+.toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #F8F8F8;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--text);
+  font-size: 16px;
+  transition: background-color 0.2s ease;
+}
+.toggle:hover {
+  background: #EEEEEE;
+}
+
+/* SVG container for connectors */
+svg.lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.link {
+  stroke: #999999;
+  stroke-width: 2;
+  fill: none;
+  marker-end: url(#arrowhead);
+  opacity: 0;
+  animation: fadeIn 0.5s forwards;
+}
+@keyframes fadeIn { to { opacity: 1; } }
+
+/* Responsive: stack categories vertically on narrow screens */
+@media (max-width: 700px) {
+  .grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+  .node {
+    width: 90%;
+  }
+}
 </style>
 </head>
 <body>
@@ -301,30 +282,30 @@ svg.lines{position:absolute;inset:0;pointer-events:none}
   <button id="collapse">Collapse all</button>
   <button id="expand">Expand all</button>
   <button id="export">Export PNG</button>
-  <span class="hint">Tip: drag to pan, scroll to zoom, click ◱ to collapse a category.</span>
+  <span class="hint">Tip: drag to pan, scroll to zoom, click the ± button to collapse or expand a category.</span>
 </div>
 
 <div class="legend">
-  <div><span class="dot" style="background:#75e5b0"></span> Strategic Streams</div>
-  <div><span class="dot" style="background:#00b4d8"></span> Programs & Activations</div>
-  <small>Lines animate on load; hover chips for details.</small>
+  <div class="row"><span class="dot" style="background:var(--cat1)"></span> Programs &amp; Activations</div>
+  <div class="row"><span class="dot" style="background:var(--cat2)"></span> Events &amp; Local</div>
+  <div class="row"><span class="dot" style="background:var(--cat3)"></span> Analytics &amp; Dashboards</div>
+  <div class="row"><span class="dot" style="background:var(--cat1)"></span> Strategy &amp; Enablement</div>
+  <small>Hover items for details; drag to pan and scroll to zoom.</small>
 </div>
 
 <div class="viewport">
   <div class="canvas" id="canvas">
     <svg class="lines" id="lines" preserveAspectRatio="none">
       <defs>
-        <linearGradient id="gradAccent" x1="0" x2="1" y1="0" y2="0">
-          <!-- updated to match the new lush accent palette -->
-          <stop offset="0%" stop-color="#00b4d8"/>
-          <stop offset="100%" stop-color="#75e5b0"/>
-        </linearGradient>
+        <!-- Arrowhead marker used for connector endpoints -->
+        <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#999999"></path>
+        </marker>
       </defs>
     </svg>
 
-    <div class="node center" id="center">
-      <div class="title">PROJECT FUSION</div>
-      <div class="subtitle">Condensed Sales Playbook</div>
+    <div class="node start" id="start">
+      PROJECT&nbsp;FUSION<br><small>Condensed&nbsp;Sales&nbsp;Playbook</small>
     </div>
 
     <div class="grid" id="grid"></div>
@@ -334,7 +315,7 @@ svg.lines{position:absolute;inset:0;pointer-events:none}
 <script>
 /* ==== DATA ==== */
 const DATA = [
-  {id:'promos',label:'Programs & Activations',color:'#6ee7ff',items:[
+  {id:'promos',label:'Programs & Activations',color:'var(--cat1)',items:[
     {label:'On Ice Program', tip:'10% discount on slowest SKUs; exclude samples/returns.'},
     {label:'Happy Hour', tip:'Timed promos tied to local events.'},
     {label:'Unique Drops', tip:'Limited-release strains/merch.'},
@@ -344,16 +325,16 @@ const DATA = [
     {label:'Go Pink', tip:'Ruby partnership for Breast Cancer Awareness.'},
     {label:'Needle in a Haystack', tip:'Hidden SKU unlocks bonus rewards.'}
   ]},
-  {id:'events',label:'Events & Local',color:'#7af0c0',items:[
+  {id:'events',label:'Events & Local',color:'var(--cat2)',items:[
     {label:'Glass Shows', tip:'Celebrity glassblower events + drops.'},
     {label:'Seasonal / Local', tip:'Community tie-ins, sports promos.'}
   ]},
-  {id:'analytics',label:'Analytics & Dashboards',color:'#7af0c0',items:[
+  {id:'analytics',label:'Analytics & Dashboards',color:'var(--cat3)',items:[
     {label:'BEI', tip:'Brand strength index for SKUs.'},
     {label:'PPI & Sell-Through', tip:'Tracks pricing power & competitiveness.'},
     {label:'Customer Strength Score', tip:'With reconciliation & CRM cadence.'}
   ]},
-  {id:'strategy',label:'Strategy & Enablement',color:'#7af0c0',items:[
+  {id:'strategy',label:'Strategy & Enablement',color:'var(--cat1)',items:[
     {label:'Sales Team Efficiency', tip:'Scores, leaderboards, recognition.'},
     {label:'Pre-Roll Strategy', tip:'Ruby dominance stabilizes categories.'},
     {label:'Accessory Strategy', tip:'Curated essentials, avoid low-value.'},
@@ -364,7 +345,7 @@ const DATA = [
 /* ==== HELPERS ==== */
 const grid = document.getElementById('grid');
 const linesSVG = document.getElementById('lines');
-const center = document.getElementById('center');
+const center = document.getElementById('start');
 const canvas = document.getElementById('canvas');
 
 function el(tag, cls, html){
@@ -375,59 +356,69 @@ function el(tag, cls, html){
 }
 
 function createCategory(col){
-  const node = el('div','node category');
+  const node = el('div', 'node category');
   node.dataset.category = col.id;
 
-  const head = el('div','head');
-  const badge = el('div','badge', `<i style="background:${col.color}"></i> ${col.label}`);
-  head.appendChild(badge);
-  node.appendChild(head);
+  // Coloured header displaying the category label
+  const header = el('div', 'header', col.label);
+  header.style.background = col.color || 'var(--primary)';
+  node.appendChild(header);
 
-  const toggle = el('button','toggle','◱');
+  // Toggle button (minus sign when open, plus when closed)
+  const toggle = el('div', 'toggle', '–');
   toggle.title = 'Collapse/Expand';
   node.appendChild(toggle);
 
-  const chipsWrap = el('div','chips');
-  col.items.forEach((it,i)=>{
-    const chip = el('div','chip');
-    chip.style.animationDelay = `${0.05*i+0.1}s`;
+  // Container for chips
+  const chipsWrap = el('div', 'chips');
+  col.items.forEach((it) => {
+    const chip = el('div', 'chip');
     chip.dataset.tip = it.tip;
     chip.innerHTML = `<span class="label">${it.label}</span><span class="info">info</span>`;
     chipsWrap.appendChild(chip);
   });
   node.appendChild(chipsWrap);
 
+  // Expand/collapse logic
   let open = true;
-  const fullHeight = () => {
+  const setHeight = () => {
     chipsWrap.style.maxHeight = 'unset';
     const h = chipsWrap.getBoundingClientRect().height;
     chipsWrap.style.maxHeight = h + 'px';
-    requestAnimationFrame(()=>{ chipsWrap.style.maxHeight = h + 'px'; });
+    requestAnimationFrame(() => { chipsWrap.style.maxHeight = h + 'px'; });
   };
-  const collapse = () => { chipsWrap.style.maxHeight = '0px'; open=false; };
-  const expand = () => { fullHeight(); open=true; };
-  toggle.addEventListener('click', ()=> open ? collapse() : expand());
-  requestAnimationFrame(fullHeight);
+  const collapse = () => {
+    chipsWrap.style.maxHeight = '0px';
+    open = false;
+    toggle.textContent = '+';
+  };
+  const expand = () => {
+    setHeight();
+    open = true;
+    toggle.textContent = '–';
+  };
+  toggle.addEventListener('click', () => (open ? collapse() : expand()));
+  requestAnimationFrame(setHeight);
 
-  return {node, chipsWrap, toggle};
+  return { node, chipsWrap, toggle };
 }
 
 const catNodes = DATA.map(createCategory);
-catNodes.forEach((c, i) => {
-  // assign an island silhouette based on its index
-  c.node.classList.add(`island-${i % 4}`);
+catNodes.forEach((c) => {
+  // Append each category node to the grid.  Island silhouettes were removed for the clean theme.
   grid.appendChild(c.node);
 });
 
 /* ==== CONNECTORS ==== */
 function pathBetween(a, b){
+  // Compute bottom centre of the start node and top centre of the category
   const ra = a.getBoundingClientRect();
   const rb = b.getBoundingClientRect();
-  const pa = {x: ra.left + ra.width/2 + window.scrollX, y: ra.bottom + window.scrollY};
-  const pb = {x: rb.left + rb.width/2 + window.scrollX, y: rb.top + window.scrollY};
-  const c1 = {x: pa.x, y: pa.y + 40};
-  const c2 = {x: pb.x, y: pb.y - 40};
-  return `M ${pa.x},${pa.y} C ${c1.x},${c1.y} ${c2.x},${c2.y} ${pb.x},${pb.y}`;
+  const pa = { x: ra.left + ra.width / 2 + window.scrollX, y: ra.bottom + window.scrollY };
+  const pb = { x: rb.left + rb.width / 2 + window.scrollX, y: rb.top + window.scrollY };
+  // Use a stepped polyline: down from pa to mid‑y, over to pb.x, then down to pb.y.
+  const midY = (pa.y + pb.y) / 2;
+  return `M ${pa.x},${pa.y} L ${pa.x},${midY} L ${pb.x},${midY} L ${pb.x},${pb.y}`;
 }
 function drawLines(){
   const rect = canvas.getBoundingClientRect();
@@ -438,8 +429,9 @@ function drawLines(){
   catNodes.forEach((cat,i)=>{
     const p = document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('d', pathBetween(center, cat.node));
-    p.setAttribute('class','link accent draw');
-    p.style.animationDelay = (i*0.08)+'s';
+    p.setAttribute('class', 'link');
+    // Stagger the appearance slightly to guide the eye
+    p.style.animationDelay = (i * 0.05) + 's';
     linesSVG.appendChild(p);
   });
 }
@@ -467,9 +459,11 @@ document.addEventListener('wheel', (e)=>{
   }
 },{passive:false});
 canvas.addEventListener('pointerdown', (e)=>{
+  // Avoid starting a pan when clicking on interactive elements like toggles or chips
+  if (e.target.closest('.toggle') || e.target.closest('.chip') || e.target.closest('.header')) return;
   isPanning = true;
-  start = {x:e.clientX, y:e.clientY};
-  startOrigin = {...origin};
+  start = { x: e.clientX, y: e.clientY };
+  startOrigin = { ...origin };
   canvas.setPointerCapture(e.pointerId);
   // disable transition while dragging so movement feels instantaneous
   canvas.style.transition = 'none';
@@ -490,8 +484,9 @@ canvas.addEventListener('pointerup', ()=>{
 document.getElementById('reset').onclick = ()=>{
   scale=1; origin={x:0,y:0}; applyTransform();
 };
-document.getElementById('collapse').onclick = ()=>{
-  document.querySelectorAll('.chips').forEach(c=> c.style.maxHeight='0px');
+document.getElementById('collapse').onclick = () => {
+  // Only collapse category panels, leave the central node intact
+  document.querySelectorAll('.category .chips').forEach(c => c.style.maxHeight = '0px');
 };
 document.getElementById('expand').onclick = ()=>{
   document.querySelectorAll('.category .chips').forEach(c=>{
@@ -509,8 +504,10 @@ document.getElementById('export').onclick = async () => {
   scale = 1; origin = {x:0,y:0};
   target.style.transform = 'translate(0px,0px) scale(1)';
   drawLines();
+  // Determine the diagram background colour from CSS variables to avoid dark fill.
+  const bgCol = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#ffffff';
   const shot = await html2canvas(target, {
-    backgroundColor: '#0f1221',
+    backgroundColor: bgCol,
     scale: 2,
     useCORS: true,
     windowWidth: target.getBoundingClientRect().width,
